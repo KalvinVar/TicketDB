@@ -179,6 +179,13 @@ node get_schema.js  # Prints all CREATE TABLE statements
 - **Paths**: Backslashes in file paths, forward slashes in URLs
 - **Start script**: `start-ticket-app.ps1` is canonical way to launch project
 
+## Git & Version Control
+- **Default Branch**: `main` (NOT master)
+- **Push Commands**: Always use `git push origin main` or `git push -u origin main`
+- **Branch Creation**: Use `git branch -M main` to rename master to main if needed
+- **Sensitive Files**: `.env` files are gitignored - NEVER commit JWT secrets or passwords
+- **Protected Files**: `data/` directory, `node_modules/`, `*.db` files are excluded via .gitignore
+
 ## What NOT to Do
 1. ❌ Don't add CSS files - use inline styles
 2. ❌ Don't use Mongoose/ORMs - direct SQLite callbacks
