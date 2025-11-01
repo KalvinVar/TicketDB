@@ -1,0 +1,44 @@
+# Environments
+.conda
+.env
+.env.local
+.env.*.local
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Node modules
+node_modules/
+ticket-app/client/node_modules/
+ticket-app/server/node_modules/
+
+# Database files with sensitive data
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# VS Code
+.vscode/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+.pytest_cache/
+
+# Backup files
+*-old.md
+*.bak
+
+# Large dataset files
+*.csv
+aa_dataset-*.csv
+dataset-*.csv
+
+# Test files
+test-api.html
+get_schema.js
+migrate_database.py

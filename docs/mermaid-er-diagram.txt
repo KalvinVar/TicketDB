@@ -1,0 +1,149 @@
+erDiagram
+    %% Core Entities
+    USERS ||--o{ TICKETS : "creates"
+    USERS ||--o{ TICKET_ASSIGNMENTS : "creates_as_user"
+    
+    DEPARTMENTS ||--o{ EMPLOYEES : "has"
+    DEPARTMENTS ||--o{ TICKETS : "handles"
+    
+    EMPLOYEES ||--o{ TICKETS : "assigned_to"
+    EMPLOYEES ||--o{ TICKETS : "closes"
+    EMPLOYEES ||--o{ TICKET_ASSIGNMENTS : "created_by"
+    EMPLOYEES ||--o{ TICKET_ASSIGNMENTS : "assigned_to"
+    EMPLOYEES ||--o{ TICKET_ASSIGNMENTS : "assigned_by"
+    EMPLOYEES ||--o{ TICKET_NOTES : "writes"
+    EMPLOYEES ||--o{ TICKET_HISTORY : "logs"
+    EMPLOYEES ||--o{ AUDIT_LOGS : "performs_action"
+    EMPLOYEES }o--o{ PERMISSIONS : "has"
+    EMPLOYEES }o--|| ROLES : "has_role"
+    
+    TICKETS ||--o{ TICKET_ASSIGNMENTS : "tracked_by"
+    TICKETS ||--o{ TICKET_NOTES : "has"
+    TICKETS ||--o{ TICKET_HISTORY : "has"
+    
+    ROLES }o--o{ PERMISSIONS : "includes"
+    
+    %% User Management
+    USERS {
+        int id PK
+        string email UK "Unique email"
+        string password_hash "Hashed password"
+        string first_name
+        string last_name
+        string phone
+        string company
+        boolean is_active "Active status"
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    %% Employee & Department Management
+    DEPARTMENTS {
+        int id PK
+        string name UK "Unique department name"
+        text description
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    EMPLOYEES {
+        int id PK
+        string email UK "Unique email"
+        string password_hash "Hashed password"
+        string first_name
+        string last_name
+        int department_id FK "References departments"
+        string role "admin/manager/agent/viewer"
+        text permissions "JSON array of permission IDs"
+        boolean is_active "Active status"
+        timestamp created_at
+        timestamp updated_at
+    }
+    
+    ROLES {
+        int id PK
+        string name UK "Unique role name"
+        text description
+        text permissions "Comma-separated permission IDs"
+        timestamp created_at
+    }
+    
+    PERMISSIONS {
+        int id PK
+        string name UK "Unique permission name"
+        text description
+        string resource "Resource type (e.g., audit_logs)"
+        string action "Action type (e.g., read, write)"
+    }
+    
+    %% Ticket Management
+    TICKETS {
+        int rowid PK "SQLite rowid"
+        text subject "Ticket subject"
+        text body "Full description"
+        text answer "Resolution answer"
+        string type "Type: request/problem/incident/question"
+        string queue "Support queue"
+        string priority "Priority: low/medium/high"
+        string language "Language code"
+        string tag_1 "Tag 1"
+        string tag_2 "Tag 2"
+        string tag_3 "Tag 3"
+        string tag_4 "Tag 4"
+        string tag_5 "Tag 5"
+        string tag_6 "Tag 6"
+        string tag_7 "Tag 7"
+        string tag_8 "Tag 8"
+        int user_id FK "Creator user ID"
+        int assigned_to FK "Assigned employee ID"
+        int department_id FK "Department ID"
+        string status "open/in_progress/closed"
+        text resolution_notes "Closing notes"
+        timestamp closed_at "When closed"
+        int closed_by FK "Employee who closed"
+    }
+    
+    TICKET_ASSIGNMENTS {
+        int id PK
+        int ticket_id FK "References tickets(rowid)"
+        int created_by_user_id FK "User who created ticket"
+        int created_by_employee_id FK "Employee who created ticket"
+        int assigned_to_employee_id FK "Currently assigned employee"
+        timestamp assigned_at "Assignment timestamp"
+        int assigned_by_employee_id FK "Employee who assigned"
+    }
+    
+    TICKET_NOTES {
+        int id PK
+        int ticket_id FK "References tickets(rowid)"
+        int employee_id FK "Author employee ID"
+        text note_text "Note content"
+        boolean is_internal "Internal note flag"
+        timestamp created_at "Creation timestamp"
+    }
+    
+    TICKET_HISTORY {
+        int id PK
+        int ticket_id FK "References tickets(id)"
+        int employee_id FK "Employee who made change"
+        string action "Action performed"
+        string field_changed "Field that changed"
+        text old_value "Previous value"
+        text new_value "New value"
+        text notes "Additional notes"
+        timestamp created_at "Change timestamp"
+    }
+    
+    %% Security & Auditing
+    AUDIT_LOGS {
+        int id PK
+        int employee_id FK "Employee who performed action"
+        string action_type "Type of action"
+        text action_description "Detailed description"
+        string target_type "Type of target entity"
+        int target_id "ID of target entity"
+        string ip_address "Client IP address"
+        text user_agent "Client user agent"
+        text request_data "JSON request details"
+        timestamp created_at "Action timestamp"
+    }

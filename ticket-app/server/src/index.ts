@@ -1,0 +1,40 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import ticketRoutes from './routes/ticketRoutes';
+import authRoutes from './routes/authRoutes';
+import adminRoutes from './routes/adminRoutes';
+
+// Load environment variables FIRST
+dotenv.config();
+
+// Run migrations
+import './migrations/create_audit_logs';
+import { addViewAuditLogsPermission } from './migrations/add_view_audit_logs_permission';
+
+// Execute migrations
+addViewAuditLogsPermission();
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// Routes
+app.use('/api', ticketRoutes);
+app.use('/api', authRoutes);
+app.use('/api', adminRoutes);
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is running' });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`API available at http://localhost:${PORT}/api/tickets`);
+  console.log(`Auth endpoints: /api/auth/user/login, /api/auth/employee/login`);
+  console.log(`Admin endpoints: /api/employees, /api/departments`);
+});

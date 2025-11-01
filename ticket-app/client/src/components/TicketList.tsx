@@ -1,0 +1,1200 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import api from '../services/api';
+import { Ticket, TicketNote } from '../types';
+
+const TicketList: React.FC = () => {
+    const { token, employee, hasPermission } = useAuth();
+    const navigate = useNavigate();
+    
+    // Check if user has permission to view tickets
+    useEffect(() => {
+        if (!hasPermission('view_tickets') && !hasPermission('view_all_tickets')) {
+            alert('You do not have permission to view tickets');
+            navigate('/employee/dashboard');
+        }
+    }, [hasPermission, navigate]);
+    
+    // State management
+    const [tickets, setTickets] = useState<Ticket[]>([]);
+    const [employees, setEmployees] = useState<any[]>([]);
+    const [departments, setDepartments] = useState<any[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    
+    // Filter states
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [priorityFilter, setPriorityFilter] = useState<string>('all');
+    const [departmentFilter, setDepartmentFilter] = useState<string>('all');
+    
+    // Pagination
+    const [currentPage, setCurrentPage] = useState<number>(1);
+    const [itemsPerPage, setItemsPerPage] = useState<number>(20);
+    
+    // Modal states
+    const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+    const [showDetailModal, setShowDetailModal] = useState<boolean>(false);
+    const [showEditModal, setShowEditModal] = useState<boolean>(false);
+    const [showCloseModal, setShowCloseModal] = useState<boolean>(false);
+    const [showNoteModal, setShowNoteModal] = useState<boolean>(false);
+    const [showCreateTicketModal, setShowCreateTicketModal] = useState<boolean>(false);
+    
+    // Form states
+    const [editForm, setEditForm] = useState<any>({});
+    const [closeForm, setCloseForm] = useState({ resolution_notes: '' });
+    const [noteForm, setNoteForm] = useState({ note_text: '', is_internal: false });
+    const [createForm, setCreateForm] = useState({
+        title: '',
+        description: '',
+        type: 'request',
+        priority: 'medium',
+        department_id: '',
+        assigned_to: ''
+    });
+    
+    // Notes for selected ticket
+    const [ticketNotes, setTicketNotes] = useState<TicketNote[]>([]);
+    
+    // Load data
+    useEffect(() => {
+        fetchTickets();
+        if (hasPermission('assign_tickets')) {
+            fetchEmployees();
+        }
+        fetchDepartments();
+    }, []);
+    
+    const fetchTickets = async () => {
+        try {
+            const response = await api.get('/tickets', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setTickets(response.data);
+        } catch (err) {
+            setError('Failed to fetch tickets');
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    const fetchEmployees = async () => {
+        try {
+            const response = await api.get('/employees', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setEmployees(response.data);
+        } catch (err) {
+            console.error('Failed to fetch employees:', err);
+        }
+    };
+    
+    const fetchDepartments = async () => {
+        try {
+            const response = await api.get('/departments', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setDepartments(response.data);
+        } catch (err) {
+            console.error('Failed to fetch departments:', err);
+        }
+    };
+    
+    const fetchTicketNotes = async (ticketId: number) => {
+        try {
+            const response = await api.get(`/tickets/${ticketId}/notes`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setTicketNotes(response.data);
+        } catch (err) {
+            console.error('Failed to fetch notes:', err);
+        }
+    };
+    
+    // Handle ticket detail view
+    const handleViewTicket = async (ticket: Ticket) => {
+        setSelectedTicket(ticket);
+        await fetchTicketNotes(ticket.id);
+        setShowDetailModal(true);
+    };
+    
+    // Handle edit ticket
+    const handleEditTicket = (ticket: Ticket) => {
+        setSelectedTicket(ticket);
+        setEditForm({
+            status: ticket.status,
+            priority: ticket.priority,
+            assigned_to: ticket.assigned_to || '',
+            department_id: ticket.department_id || ''
+        });
+        setShowEditModal(true);
+    };
+    
+    const submitEdit = async () => {
+        if (!selectedTicket) return;
+        
+        try {
+            await api.put(`/tickets/${selectedTicket.id}`, editForm, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setShowEditModal(false);
+            fetchTickets();
+        } catch (err: any) {
+            alert('Failed to update ticket: ' + (err.response?.data?.error || err.message));
+        }
+    };
+    
+    // Handle close ticket
+    const handleCloseTicket = (ticket: Ticket) => {
+        setSelectedTicket(ticket);
+        setCloseForm({ resolution_notes: '' });
+        setShowCloseModal(true);
+    };
+    
+    const submitClose = async () => {
+        if (!selectedTicket || !employee) return;
+        
+        if (!closeForm.resolution_notes.trim()) {
+            alert('Resolution notes are required');
+            return;
+        }
+        
+        try {
+            await api.patch(`/tickets/${selectedTicket.id}/close`, {
+                resolution_notes: closeForm.resolution_notes,
+                employee_id: employee.id
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setShowCloseModal(false);
+            fetchTickets();
+        } catch (err: any) {
+            alert('Failed to close ticket: ' + (err.response?.data?.error || err.message));
+        }
+    };
+    
+    // Handle add note
+    const handleAddNote = (ticket: Ticket) => {
+        setSelectedTicket(ticket);
+        setNoteForm({ note_text: '', is_internal: false });
+        setShowNoteModal(true);
+    };
+    
+    const submitNote = async () => {
+        if (!selectedTicket) return;
+        
+        if (!noteForm.note_text.trim()) {
+            alert('Note text is required');
+            return;
+        }
+        
+        try {
+            await api.post(`/tickets/${selectedTicket.id}/notes`, noteForm, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setShowNoteModal(false);
+            alert('Note added successfully');
+        } catch (err: any) {
+            alert('Failed to add note: ' + (err.response?.data?.error || err.message));
+        }
+    };
+    
+    // Handle create employee ticket
+    const handleCreateTicket = () => {
+        setCreateForm({
+            title: '',
+            description: '',
+            type: 'request',
+            priority: 'medium',
+            department_id: '',
+            assigned_to: ''
+        });
+        setShowCreateTicketModal(true);
+    };
+    
+    const submitCreateTicket = async () => {
+        if (!createForm.title.trim() || !createForm.description.trim()) {
+            alert('Title and description are required');
+            return;
+        }
+        
+        try {
+            await api.post('/tickets/employee/create', createForm, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setShowCreateTicketModal(false);
+            fetchTickets();
+            alert('Ticket created successfully');
+        } catch (err: any) {
+            alert('Failed to create ticket: ' + (err.response?.data?.error || err.message));
+        }
+    };
+    
+    // Filter tickets
+    const filteredTickets = tickets.filter(ticket => {
+        const matchesSearch = searchQuery === '' || 
+            ticket.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            ticket.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            ticket.creator_name?.toLowerCase().includes(searchQuery.toLowerCase());
+        
+        const matchesStatus = statusFilter === 'all' || ticket.status === statusFilter;
+        const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+        const matchesDepartment = departmentFilter === 'all' || ticket.department_id?.toString() === departmentFilter;
+        
+        return matchesSearch && matchesStatus && matchesPriority && matchesDepartment;
+    });
+    
+    // Pagination
+    const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
+    const paginatedTickets = filteredTickets.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+    
+    // Priority badge color
+    const getPriorityColor = (priority?: string) => {
+        switch (priority) {
+            case 'high': return '#ef4444';
+            case 'medium': return '#f59e0b';
+            case 'low': return '#10b981';
+            default: return '#6b7280';
+        }
+    };
+    
+    // Status badge color
+    const getStatusColor = (status?: string) => {
+        switch (status) {
+            case 'open': return '#3b82f6';
+            case 'in_progress': return '#f59e0b';
+            case 'pending': return '#8b5cf6';
+            case 'closed': return '#6b7280';
+            default: return '#6b7280';
+        }
+    };
+    
+    if (loading) {
+        return <div style={styles.loading}>Loading tickets...</div>;
+    }
+    
+    if (error) {
+        return <div style={styles.error}>{error}</div>;
+    }
+    
+    return (
+        <div style={styles.container}>
+            {/* Header with back button */}
+            <div style={styles.header}>
+                <button onClick={() => navigate('/employee/dashboard')} style={styles.backButton}>
+                    ← Back to Dashboard
+                </button>
+                <h1 style={styles.title}>All Tickets</h1>
+                {hasPermission('create_tickets') && (
+                    <button onClick={handleCreateTicket} style={styles.createButton}>
+                        + Create Ticket
+                    </button>
+                )}
+            </div>
+            
+            {/* Filters */}
+            <div style={styles.filterBar}>
+                <input
+                    type="text"
+                    placeholder="Search tickets..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={styles.searchInput}
+                />
+                
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} style={styles.select}>
+                    <option value="all">All Statuses</option>
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="pending">Pending</option>
+                    <option value="closed">Closed</option>
+                </select>
+                
+                <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} style={styles.select}>
+                    <option value="all">All Priorities</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+                
+                <select value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)} style={styles.select}>
+                    <option value="all">All Departments</option>
+                    {departments.map(dept => (
+                        <option key={dept.id} value={dept.id}>{dept.name}</option>
+                    ))}
+                </select>
+                
+                <button onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                    setPriorityFilter('all');
+                    setDepartmentFilter('all');
+                }} style={styles.clearButton}>
+                    Clear Filters
+                </button>
+            </div>
+            
+            {/* Stats */}
+            <div style={styles.stats}>
+                <div style={styles.statCard}>
+                    <div style={styles.statValue}>{filteredTickets.length}</div>
+                    <div style={styles.statLabel}>Total Tickets</div>
+                </div>
+                <div style={styles.statCard}>
+                    <div style={styles.statValue}>{filteredTickets.filter(t => t.status === 'open').length}</div>
+                    <div style={styles.statLabel}>Open</div>
+                </div>
+                <div style={styles.statCard}>
+                    <div style={styles.statValue}>{filteredTickets.filter(t => t.status === 'in_progress').length}</div>
+                    <div style={styles.statLabel}>In Progress</div>
+                </div>
+                <div style={styles.statCard}>
+                    <div style={styles.statValue}>{filteredTickets.filter(t => t.status === 'closed').length}</div>
+                    <div style={styles.statLabel}>Closed</div>
+                </div>
+            </div>
+            
+            {/* Tickets grid */}
+            <div style={styles.ticketsGrid}>
+                {paginatedTickets.map(ticket => (
+                    <div key={ticket.id} style={styles.ticketCard}>
+                        <div style={styles.ticketHeader}>
+                            <span style={styles.ticketId}>#{ticket.id}</span>
+                            <div style={styles.badges}>
+                                <span style={{...styles.badge, backgroundColor: getPriorityColor(ticket.priority)}}>
+                                    {ticket.priority}
+                                </span>
+                                <span style={{...styles.badge, backgroundColor: getStatusColor(ticket.status)}}>
+                                    {ticket.status}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <h3 style={styles.ticketTitle}>{ticket.title}</h3>
+                        
+                        <p style={styles.ticketDescription}>
+                            {ticket.description && ticket.description.length > 100
+                                ? ticket.description.substring(0, 100) + '...'
+                                : ticket.description || 'No description'}
+                        </p>
+                        
+                        <div style={styles.ticketMeta}>
+                            {ticket.department_name && (
+                                <div style={styles.metaItem}>
+                                    <span style={styles.metaIcon}>📁</span>
+                                    <span>{ticket.department_name}</span>
+                                </div>
+                            )}
+                            {ticket.creator_name && (
+                                <div style={styles.metaItem}>
+                                    <span style={styles.metaIcon}>👤</span>
+                                    <span>Created by: {ticket.creator_name}</span>
+                                </div>
+                            )}
+                            {ticket.assignee_name && (
+                                <div style={styles.metaItem}>
+                                    <span style={styles.metaIcon}>👨‍💼</span>
+                                    <span>Assigned to: {ticket.assignee_name}</span>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div style={styles.ticketActions}>
+                            <button onClick={() => handleViewTicket(ticket)} style={styles.actionButton}>
+                                View Details
+                            </button>
+                            {hasPermission('edit_tickets') && ticket.status !== 'closed' && (
+                                <button onClick={() => handleEditTicket(ticket)} style={{...styles.actionButton, backgroundColor: '#3b82f6'}}>
+                                    Edit
+                                </button>
+                            )}
+                            {hasPermission('edit_tickets') && (
+                                <button onClick={() => handleAddNote(ticket)} style={{...styles.actionButton, backgroundColor: '#8b5cf6'}}>
+                                    Add Note
+                                </button>
+                            )}
+                            {hasPermission('close_tickets') && ticket.status !== 'closed' && (
+                                <button onClick={() => handleCloseTicket(ticket)} style={{...styles.actionButton, backgroundColor: '#ef4444'}}>
+                                    Close
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            
+            {filteredTickets.length === 0 && (
+                <div style={styles.emptyState}>No tickets found</div>
+            )}
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div style={styles.pagination}>
+                    <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        style={styles.pageButton}
+                    >
+                        Previous
+                    </button>
+                    <span style={styles.pageInfo}>
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        style={styles.pageButton}
+                    >
+                        Next
+                    </button>
+                    <select value={itemsPerPage} onChange={(e) => {
+                        setItemsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                    }} style={styles.select}>
+                        <option value={10}>10 per page</option>
+                        <option value={20}>20 per page</option>
+                        <option value={50}>50 per page</option>
+                        <option value={100}>100 per page</option>
+                    </select>
+                </div>
+            )}
+            
+            {/* Detail Modal */}
+            {showDetailModal && selectedTicket && (
+                <div style={styles.modalOverlay} onClick={() => setShowDetailModal(false)}>
+                    <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        <div style={styles.modalHeader}>
+                            <h2>Ticket #{selectedTicket.id}</h2>
+                            <button onClick={() => setShowDetailModal(false)} style={styles.closeButton}>×</button>
+                        </div>
+                        
+                        <div style={styles.modalBody}>
+                            <h3 style={styles.detailTitle}>{selectedTicket.title}</h3>
+                            
+                            <div style={styles.detailSection}>
+                                <strong>Description:</strong>
+                                <p style={styles.detailText}>{selectedTicket.description}</p>
+                            </div>
+                            
+                            <div style={styles.detailGrid}>
+                                <div><strong>Status:</strong> {selectedTicket.status}</div>
+                                <div><strong>Priority:</strong> {selectedTicket.priority}</div>
+                                <div><strong>Department:</strong> {selectedTicket.department_name || 'N/A'}</div>
+                                <div><strong>Created by:</strong> {selectedTicket.creator_name || 'Unknown'}</div>
+                                <div><strong>Assigned to:</strong> {selectedTicket.assignee_name || 'Unassigned'}</div>
+                            </div>
+                            
+                            {selectedTicket.resolution_notes && (
+                                <div style={styles.resolutionSection}>
+                                    <h4 style={styles.sectionTitle}>Resolution Notes</h4>
+                                    <p style={styles.resolutionText}>{selectedTicket.resolution_notes}</p>
+                                </div>
+                            )}
+                            
+                            {ticketNotes.length > 0 && (
+                                <div style={styles.notesSection}>
+                                    <h4 style={styles.sectionTitle}>Notes</h4>
+                                    {ticketNotes.map(note => (
+                                        <div key={note.id} style={styles.noteItem}>
+                                            <div style={styles.noteHeader}>
+                                                <span style={styles.noteAuthor}>{note.employee_name}</span>
+                                                <span style={styles.noteDate}>{new Date(note.created_at).toLocaleString()}</span>
+                                                {note.is_internal && (
+                                                    <span style={styles.internalBadge}>Internal</span>
+                                                )}
+                                            </div>
+                                            <p style={styles.noteText}>{note.note_text}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Edit Modal */}
+            {showEditModal && selectedTicket && (
+                <div style={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
+                    <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        <div style={styles.modalHeader}>
+                            <h2>Edit Ticket #{selectedTicket.id}</h2>
+                            <button onClick={() => setShowEditModal(false)} style={styles.closeButton}>×</button>
+                        </div>
+                        
+                        <div style={styles.modalBody}>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Status</label>
+                                <select
+                                    value={editForm.status}
+                                    onChange={(e) => setEditForm({...editForm, status: e.target.value})}
+                                    style={styles.input}
+                                >
+                                    <option value="open">Open</option>
+                                    <option value="in_progress">In Progress</option>
+                                    <option value="pending">Pending</option>
+                                </select>
+                            </div>
+                            
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Priority</label>
+                                <select
+                                    value={editForm.priority}
+                                    onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
+                                    style={styles.input}
+                                >
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                            </div>
+                            
+                            {hasPermission('assign_tickets') && (
+                                <>
+                                    <div style={styles.formGroup}>
+                                        <label style={styles.label}>Assign to Employee</label>
+                                        <select
+                                            value={editForm.assigned_to}
+                                            onChange={(e) => setEditForm({...editForm, assigned_to: e.target.value})}
+                                            style={styles.input}
+                                        >
+                                            <option value="">Unassigned</option>
+                                            {employees.map(emp => (
+                                                <option key={emp.id} value={emp.id}>
+                                                    {emp.first_name} {emp.last_name} ({emp.department_name})
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    
+                                    <div style={styles.formGroup}>
+                                        <label style={styles.label}>Department</label>
+                                        <select
+                                            value={editForm.department_id}
+                                            onChange={(e) => setEditForm({...editForm, department_id: e.target.value})}
+                                            style={styles.input}
+                                        >
+                                            <option value="">No department</option>
+                                            {departments.map(dept => (
+                                                <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+                            
+                            <div style={styles.modalActions}>
+                                <button onClick={submitEdit} style={styles.submitButton}>Save Changes</button>
+                                <button onClick={() => setShowEditModal(false)} style={styles.cancelButton}>Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Close Modal */}
+            {showCloseModal && selectedTicket && (
+                <div style={styles.modalOverlay} onClick={() => setShowCloseModal(false)}>
+                    <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        <div style={styles.modalHeader}>
+                            <h2>Close Ticket #{selectedTicket.id}</h2>
+                            <button onClick={() => setShowCloseModal(false)} style={styles.closeButton}>×</button>
+                        </div>
+                        
+                        <div style={styles.modalBody}>
+                            <p style={styles.warningText}>
+                                Please provide resolution notes before closing this ticket.
+                            </p>
+                            
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Resolution Notes *</label>
+                                <textarea
+                                    value={closeForm.resolution_notes}
+                                    onChange={(e) => setCloseForm({...closeForm, resolution_notes: e.target.value})}
+                                    style={styles.textarea}
+                                    rows={5}
+                                    placeholder="Describe how this ticket was resolved..."
+                                />
+                            </div>
+                            
+                            <div style={styles.modalActions}>
+                                <button onClick={submitClose} style={{...styles.submitButton, backgroundColor: '#ef4444'}}>
+                                    Close Ticket
+                                </button>
+                                <button onClick={() => setShowCloseModal(false)} style={styles.cancelButton}>Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Note Modal */}
+            {showNoteModal && selectedTicket && (
+                <div style={styles.modalOverlay} onClick={() => setShowNoteModal(false)}>
+                    <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        <div style={styles.modalHeader}>
+                            <h2>Add Note to Ticket #{selectedTicket.id}</h2>
+                            <button onClick={() => setShowNoteModal(false)} style={styles.closeButton}>×</button>
+                        </div>
+                        
+                        <div style={styles.modalBody}>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Note *</label>
+                                <textarea
+                                    value={noteForm.note_text}
+                                    onChange={(e) => setNoteForm({...noteForm, note_text: e.target.value})}
+                                    style={styles.textarea}
+                                    rows={5}
+                                    placeholder="Enter your note..."
+                                />
+                            </div>
+                            
+                            <div style={styles.checkboxGroup}>
+                                <input
+                                    type="checkbox"
+                                    id="internal"
+                                    checked={noteForm.is_internal}
+                                    onChange={(e) => setNoteForm({...noteForm, is_internal: e.target.checked})}
+                                />
+                                <label htmlFor="internal" style={styles.checkboxLabel}>
+                                    Internal Note (not visible to customer)
+                                </label>
+                            </div>
+                            
+                            <div style={styles.modalActions}>
+                                <button onClick={submitNote} style={styles.submitButton}>Add Note</button>
+                                <button onClick={() => setShowNoteModal(false)} style={styles.cancelButton}>Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {/* Create Ticket Modal */}
+            {showCreateTicketModal && (
+                <div style={styles.modalOverlay} onClick={() => setShowCreateTicketModal(false)}>
+                    <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        <div style={styles.modalHeader}>
+                            <h2>Create New Ticket</h2>
+                            <button onClick={() => setShowCreateTicketModal(false)} style={styles.closeButton}>×</button>
+                        </div>
+                        
+                        <div style={styles.modalBody}>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Title *</label>
+                                <input
+                                    type="text"
+                                    value={createForm.title}
+                                    onChange={(e) => setCreateForm({...createForm, title: e.target.value})}
+                                    style={styles.input}
+                                    placeholder="Brief description of the issue"
+                                />
+                            </div>
+                            
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Description *</label>
+                                <textarea
+                                    value={createForm.description}
+                                    onChange={(e) => setCreateForm({...createForm, description: e.target.value})}
+                                    style={styles.textarea}
+                                    rows={5}
+                                    placeholder="Detailed description..."
+                                />
+                            </div>
+                            
+                            <div style={styles.formRow}>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Type</label>
+                                    <select
+                                        value={createForm.type}
+                                        onChange={(e) => setCreateForm({...createForm, type: e.target.value})}
+                                        style={styles.input}
+                                    >
+                                        <option value="request">Request</option>
+                                        <option value="incident">Incident</option>
+                                        <option value="problem">Problem</option>
+                                        <option value="question">Question</option>
+                                    </select>
+                                </div>
+                                
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Priority</label>
+                                    <select
+                                        value={createForm.priority}
+                                        onChange={(e) => setCreateForm({...createForm, priority: e.target.value})}
+                                        style={styles.input}
+                                    >
+                                        <option value="low">Low</option>
+                                        <option value="medium">Medium</option>
+                                        <option value="high">High</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div style={styles.formRow}>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Department</label>
+                                    <select
+                                        value={createForm.department_id}
+                                        onChange={(e) => setCreateForm({...createForm, department_id: e.target.value})}
+                                        style={styles.input}
+                                    >
+                                        <option value="">Select department</option>
+                                        {departments.map(dept => (
+                                            <option key={dept.id} value={dept.id}>{dept.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {hasPermission('assign_tickets') && (
+                                    <div style={styles.formGroup}>
+                                        <label style={styles.label}>Assign To</label>
+                                        <select
+                                            value={createForm.assigned_to}
+                                            onChange={(e) => setCreateForm({...createForm, assigned_to: e.target.value})}
+                                            style={styles.input}
+                                        >
+                                            <option value="">Unassigned</option>
+                                            {employees.map(emp => (
+                                                <option key={emp.id} value={emp.id}>
+                                                    {emp.first_name} {emp.last_name}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                            
+                            <div style={styles.modalActions}>
+                                <button onClick={submitCreateTicket} style={styles.submitButton}>Create Ticket</button>
+                                <button onClick={() => setShowCreateTicketModal(false)} style={styles.cancelButton}>Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// Styles
+const styles: { [key: string]: React.CSSProperties } = {
+    container: {
+        padding: '20px',
+        maxWidth: '1400px',
+        margin: '0 auto',
+        backgroundColor: '#f9fafb'
+    },
+    header: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '20px'
+    },
+    backButton: {
+        padding: '10px 20px',
+        backgroundColor: '#6b7280',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '14px'
+    },
+    title: {
+        fontSize: '28px',
+        fontWeight: 'bold',
+        color: '#1f2937',
+        flex: 1,
+        textAlign: 'center'
+    },
+    createButton: {
+        padding: '10px 20px',
+        backgroundColor: '#10b981',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 'bold'
+    },
+    filterBar: {
+        display: 'flex',
+        gap: '10px',
+        marginBottom: '20px',
+        flexWrap: 'wrap'
+    },
+    searchInput: {
+        flex: '2',
+        padding: '10px',
+        border: '1px solid #d1d5db',
+        borderRadius: '5px',
+        fontSize: '14px'
+    },
+    select: {
+        padding: '10px',
+        border: '1px solid #d1d5db',
+        borderRadius: '5px',
+        fontSize: '14px',
+        backgroundColor: 'white'
+    },
+    clearButton: {
+        padding: '10px 20px',
+        backgroundColor: '#ef4444',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '14px'
+    },
+    stats: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '15px',
+        marginBottom: '20px'
+    },
+    statCard: {
+        padding: '20px',
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        textAlign: 'center'
+    },
+    statValue: {
+        fontSize: '32px',
+        fontWeight: 'bold',
+        color: '#1f2937'
+    },
+    statLabel: {
+        fontSize: '14px',
+        color: '#6b7280',
+        marginTop: '5px'
+    },
+    ticketsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+        gap: '20px',
+        marginBottom: '20px'
+    },
+    ticketCard: {
+        padding: '20px',
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        transition: 'transform 0.2s, box-shadow 0.2s'
+    },
+    ticketHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '10px'
+    },
+    ticketId: {
+        fontSize: '14px',
+        fontWeight: 'bold',
+        color: '#6b7280'
+    },
+    badges: {
+        display: 'flex',
+        gap: '5px'
+    },
+    badge: {
+        padding: '4px 8px',
+        borderRadius: '12px',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        color: 'white',
+        textTransform: 'uppercase'
+    },
+    ticketTitle: {
+        fontSize: '18px',
+        fontWeight: 'bold',
+        color: '#1f2937',
+        marginBottom: '10px'
+    },
+    ticketDescription: {
+        fontSize: '14px',
+        color: '#4b5563',
+        marginBottom: '15px',
+        lineHeight: '1.5',
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word'
+    },
+    ticketMeta: {
+        fontSize: '12px',
+        color: '#6b7280',
+        marginBottom: '15px'
+    },
+    metaItem: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '5px',
+        marginBottom: '5px'
+    },
+    metaIcon: {
+        fontSize: '14px'
+    },
+    ticketActions: {
+        display: 'flex',
+        gap: '5px',
+        flexWrap: 'wrap'
+    },
+    actionButton: {
+        padding: '8px 12px',
+        backgroundColor: '#10b981',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        flex: 1,
+        minWidth: '80px'
+    },
+    pagination: {
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '15px',
+        padding: '20px'
+    },
+    pageButton: {
+        padding: '10px 20px',
+        backgroundColor: '#3b82f6',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '14px'
+    },
+    pageInfo: {
+        fontSize: '14px',
+        color: '#4b5563'
+    },
+    loading: {
+        textAlign: 'center',
+        padding: '40px',
+        fontSize: '18px',
+        color: '#6b7280'
+    },
+    error: {
+        textAlign: 'center',
+        padding: '40px',
+        fontSize: '18px',
+        color: '#ef4444'
+    },
+    emptyState: {
+        textAlign: 'center',
+        padding: '60px',
+        fontSize: '18px',
+        color: '#9ca3af',
+        backgroundColor: 'white',
+        borderRadius: '8px'
+    },
+    modalOverlay: {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000
+    },
+    modalContent: {
+        backgroundColor: 'white',
+        borderRadius: '10px',
+        maxWidth: '600px',
+        width: '90%',
+        maxHeight: '90vh',
+        overflow: 'auto',
+        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
+        overflowWrap: 'break-word'
+    },
+    modalHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '20px',
+        borderBottom: '1px solid #e5e7eb'
+    },
+    closeButton: {
+        background: 'none',
+        border: 'none',
+        fontSize: '28px',
+        cursor: 'pointer',
+        color: '#6b7280'
+    },
+    modalBody: {
+        padding: '20px'
+    },
+    detailTitle: {
+        fontSize: '20px',
+        fontWeight: 'bold',
+        color: '#1f2937',
+        marginBottom: '15px'
+    },
+    detailSection: {
+        marginBottom: '20px'
+    },
+    detailText: {
+        fontSize: '14px',
+        color: '#4b5563',
+        lineHeight: '1.6',
+        marginTop: '10px',
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word',
+        whiteSpace: 'pre-wrap'
+    },
+    detailGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '15px',
+        marginBottom: '20px',
+        fontSize: '14px',
+        color: '#4b5563'
+    },
+    resolutionSection: {
+        backgroundColor: '#f3f4f6',
+        padding: '15px',
+        borderRadius: '5px',
+        marginBottom: '20px'
+    },
+    sectionTitle: {
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#1f2937',
+        marginBottom: '10px'
+    },
+    resolutionText: {
+        fontSize: '14px',
+        color: '#4b5563',
+        lineHeight: '1.6',
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word',
+        whiteSpace: 'pre-wrap'
+    },
+    notesSection: {
+        marginTop: '20px'
+    },
+    noteItem: {
+        backgroundColor: '#f9fafb',
+        padding: '15px',
+        borderRadius: '5px',
+        marginBottom: '10px',
+        borderLeft: '3px solid #3b82f6'
+    },
+    noteHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '10px',
+        fontSize: '12px'
+    },
+    noteAuthor: {
+        fontWeight: 'bold',
+        color: '#1f2937'
+    },
+    noteDate: {
+        color: '#6b7280'
+    },
+    internalBadge: {
+        backgroundColor: '#ef4444',
+        color: 'white',
+        padding: '2px 6px',
+        borderRadius: '10px',
+        fontSize: '10px',
+        fontWeight: 'bold'
+    },
+    noteText: {
+        fontSize: '14px',
+        color: '#4b5563',
+        lineHeight: '1.5',
+        wordWrap: 'break-word',
+        overflowWrap: 'break-word',
+        whiteSpace: 'pre-wrap'
+    },
+    formGroup: {
+        marginBottom: '20px'
+    },
+    formRow: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '15px'
+    },
+    label: {
+        display: 'block',
+        marginBottom: '5px',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        color: '#374151'
+    },
+    input: {
+        width: '100%',
+        padding: '10px',
+        border: '1px solid #d1d5db',
+        borderRadius: '5px',
+        fontSize: '14px',
+        boxSizing: 'border-box'
+    },
+    textarea: {
+        width: '100%',
+        padding: '10px',
+        border: '1px solid #d1d5db',
+        borderRadius: '5px',
+        fontSize: '14px',
+        fontFamily: 'inherit',
+        resize: 'vertical',
+        boxSizing: 'border-box'
+    },
+    checkboxGroup: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        marginBottom: '20px'
+    },
+    checkboxLabel: {
+        fontSize: '14px',
+        color: '#374151'
+    },
+    warningText: {
+        fontSize: '14px',
+        color: '#d97706',
+        marginBottom: '20px',
+        padding: '10px',
+        backgroundColor: '#fef3c7',
+        borderRadius: '5px'
+    },
+    modalActions: {
+        display: 'flex',
+        gap: '10px',
+        justifyContent: 'flex-end',
+        marginTop: '20px'
+    },
+    submitButton: {
+        padding: '10px 20px',
+        backgroundColor: '#10b981',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 'bold'
+    },
+    cancelButton: {
+        padding: '10px 20px',
+        backgroundColor: '#6b7280',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '14px'
+    }
+};
+
+export default TicketList;
