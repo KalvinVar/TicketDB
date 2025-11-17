@@ -1,0 +1,17 @@
+{
+  "trained_at": "20251114_093914",
+  "type_accuracy": 0.8037735849056604,
+  "priority_accuracy": 0.5710691823899371,
+  "vectorizer_features": 5000,
+  "type_classes": [
+    "Change",
+    "Incident",
+    "Problem",
+    "Request"
+  ],
+  "priority_classes": [
+    "high",
+    "low",
+    "medium"
+  ]
+}

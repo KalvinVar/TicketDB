@@ -92,4 +92,4 @@ Write-Host ""
 Write-Host "Press any key to exit this script (services will continue running)..." -ForegroundColor Cyan
 $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 
-Write-Host "👋 Script finished. Services are still running in separate windows." -ForegroundColor Green
+Write-Host "Script finished. Services are still running in separate windows." -ForegroundColor Green

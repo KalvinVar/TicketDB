@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
 
+// Debounce timer for ML predictions
+let debounceTimer: ReturnType<typeof setTimeout>;
+
 interface Department {
   id: number;
   name: string;
@@ -25,6 +28,9 @@ const CreateTicket = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showMLSuggestions, setShowMLSuggestions] = useState(false);
+  const [mlPredictions, setMlPredictions] = useState<any>(null);
+  const [mlLoading, setMlLoading] = useState(false);
 
   useEffect(() => {
     fetchDepartments();
@@ -70,6 +76,8 @@ const CreateTicket = () => {
         user_id: user?.id
       };
 
+      console.log('Submitting ticket data:', ticketData);
+
       await api.post('/tickets', ticketData, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -80,9 +88,20 @@ const CreateTicket = () => {
       setTimeout(() => {
         navigate('/user/tickets');
       }, 2000);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create ticket';
-      setError(errorMessage);
+    } catch (err: any) {
+      console.error('Ticket creation error:', err);
+      console.error('Error response:', err.response?.data);
+      
+      // Extract detailed validation errors if available
+      if (err.response?.data?.details) {
+        const validationErrors = err.response.data.details
+          .map((detail: any) => `${detail.path}: ${detail.msg}`)
+          .join(', ');
+        setError(`Validation failed: ${validationErrors}`);
+      } else {
+        const errorMessage = err.response?.data?.error || err.message || 'Failed to create ticket';
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
@@ -93,6 +112,48 @@ const CreateTicket = () => {
       ...formData,
       [e.target.name]: e.target.value
     });
+    
+    // Auto-fetch ML predictions when description has enough content (with debounce)
+    if (showMLSuggestions && (e.target.name === 'title' || e.target.name === 'description')) {
+      const title = e.target.name === 'title' ? e.target.value : formData.title;
+      const description = e.target.name === 'description' ? e.target.value : formData.description;
+      
+      if (title.length > 10 || description.length > 50) {
+        // Clear previous timer
+        clearTimeout(debounceTimer);
+        
+        // Set new timer - wait 800ms after user stops typing
+        debounceTimer = setTimeout(() => {
+          fetchMLPredictions(title, description);
+        }, 800);
+      }
+    }
+  };
+
+  const fetchMLPredictions = async (title: string, description: string) => {
+    if (!title && !description) return;
+    if (!showMLSuggestions) return; // Don't fetch if toggle is off
+    
+    setMlLoading(true);
+    try {
+      const response = await api.post('/ml/predict-full', 
+        { title, description },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      console.log('ML Predictions received:', response.data);
+      setMlPredictions(response.data);
+    } catch (err) {
+      console.error('ML prediction failed:', err);
+      // Silently fail - don't show ML errors to user
+      setMlPredictions(null);
+    } finally {
+      setMlLoading(false);
+    }
+  };
+
+  const applyMLSuggestion = (field: string, value: string) => {
+    console.log(`Applying ML suggestion: ${field} = ${value}`);
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   if (success) {
@@ -113,12 +174,127 @@ const CreateTicket = () => {
         <div style={styles.header}>
           <h1 style={styles.title}>Create New Ticket</h1>
           <p style={styles.subtitle}>Submit a support request and our team will assist you</p>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setShowMLSuggestions(!showMLSuggestions);
+              if (!showMLSuggestions && (formData.title || formData.description)) {
+                fetchMLPredictions(formData.title, formData.description);
+              }
+            }}
+            style={{
+              ...styles.mlToggleButton,
+              background: showMLSuggestions 
+                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+                : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
+            }}
+          >
+            🤖 {showMLSuggestions ? 'Hide' : 'Show'} ML Suggestions
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} style={styles.form}>
           {error && (
             <div style={styles.errorBox}>
               {error}
+            </div>
+          )}
+
+          {showMLSuggestions && (
+            <div style={styles.mlSuggestionsBox}>
+              <div style={styles.mlHeader}>
+                <span style={{ fontSize: '18px', fontWeight: '600' }}>🤖 AI Suggestions</span>
+                {mlLoading && <span style={{ fontSize: '14px', color: '#6b7280' }}>Analyzing...</span>}
+              </div>
+              
+              {mlPredictions && !mlLoading ? (
+                <div style={styles.mlContent}>
+                  {/* Type Prediction */}
+                  {mlPredictions.category?.type && (
+                    <div style={styles.mlSuggestion}>
+                      <div style={styles.mlLabel}>
+                        <span>Suggested Type:</span>
+                        <span style={styles.mlConfidence}>
+                          {(mlPredictions.category.type.confidence * 100).toFixed(0)}% confident
+                        </span>
+                      </div>
+                      <div style={styles.mlValue}>
+                        <strong style={{ textTransform: 'capitalize' }}>
+                          {mlPredictions.category.type.prediction}
+                        </strong>
+                        {formData.type !== mlPredictions.category.type.prediction && (
+                          <button
+                            type="button"
+                            onClick={() => applyMLSuggestion('type', mlPredictions.category.type.prediction)}
+                            style={styles.applyButton}
+                          >
+                            Apply
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Priority Prediction */}
+                  {mlPredictions.category?.priority && (
+                    <div style={styles.mlSuggestion}>
+                      <div style={styles.mlLabel}>
+                        <span>Suggested Priority:</span>
+                        <span style={styles.mlConfidence}>
+                          {(mlPredictions.category.priority.confidence * 100).toFixed(0)}% confident
+                        </span>
+                      </div>
+                      <div style={styles.mlValue}>
+                        <strong style={{ textTransform: 'capitalize' }}>
+                          {mlPredictions.category.priority.prediction}
+                        </strong>
+                        {formData.priority !== mlPredictions.category.priority.prediction && (
+                          <button
+                            type="button"
+                            onClick={() => applyMLSuggestion('priority', mlPredictions.category.priority.prediction)}
+                            style={styles.applyButton}
+                          >
+                            Apply
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sentiment Analysis */}
+                  {mlPredictions.sentiment && (
+                    <div style={styles.mlSuggestion}>
+                      <div style={styles.mlLabel}>
+                        <span>Sentiment Analysis:</span>
+                      </div>
+                      <div style={styles.sentimentBadge}>
+                        <span style={{ fontSize: '20px', marginRight: '8px' }}>
+                          {mlPredictions.sentiment.emotion === 'angry' ? '😡' :
+                           mlPredictions.sentiment.emotion === 'frustrated' ? '😤' :
+                           mlPredictions.sentiment.emotion === 'concerned' ? '😟' :
+                           mlPredictions.sentiment.emotion === 'satisfied' ? '😊' : '😐'}
+                        </span>
+                        <div>
+                          <div style={{ fontWeight: '600', textTransform: 'capitalize' }}>
+                            {mlPredictions.sentiment.emotion}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                            {mlPredictions.sentiment.sentiment} ({(mlPredictions.sentiment.score * 100).toFixed(0)}%)
+                          </div>
+                        </div>
+                        {mlPredictions.sentiment.urgency_flag && (
+                          <span style={styles.urgencyBadge}>⚠️ High Urgency</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : !mlLoading ? (
+                <p style={{ fontSize: '14px', color: '#6b7280', textAlign: 'center', padding: '20px' }}>
+                  Start typing your title and description to see AI suggestions...
+                </p>
+              ) : null}
             </div>
           )}
 
@@ -350,6 +526,93 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s',
     boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+  },
+  mlToggleButton: {
+    marginTop: '15px',
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontWeight: '600',
+    color: 'white',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    transition: 'all 0.2s',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+  },
+  mlSuggestionsBox: {
+    backgroundColor: '#f0f9ff',
+    border: '2px solid #0ea5e9',
+    borderRadius: '10px',
+    padding: '20px',
+    marginTop: '10px'
+  },
+  mlHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '15px',
+    color: '#0c4a6e'
+  },
+  mlContent: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '15px'
+  },
+  mlSuggestion: {
+    backgroundColor: 'white',
+    padding: '15px',
+    borderRadius: '8px',
+    border: '1px solid #e0f2fe'
+  },
+  mlLabel: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: '13px',
+    color: '#64748b',
+    marginBottom: '8px'
+  },
+  mlConfidence: {
+    fontSize: '12px',
+    padding: '3px 8px',
+    backgroundColor: '#dbeafe',
+    borderRadius: '4px',
+    color: '#1e40af'
+  },
+  mlValue: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: '16px',
+    color: '#1e293b'
+  },
+  applyButton: {
+    padding: '6px 16px',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: 'white',
+    backgroundColor: '#0ea5e9',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s'
+  },
+  sentimentBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '10px',
+    backgroundColor: '#f8fafc',
+    borderRadius: '6px'
+  },
+  urgencyBadge: {
+    marginLeft: 'auto',
+    padding: '4px 10px',
+    fontSize: '12px',
+    fontWeight: '600',
+    backgroundColor: '#fee2e2',
+    color: '#dc2626',
+    borderRadius: '6px'
   }
 };
 

@@ -196,15 +196,164 @@ node get_schema.js  # Prints all CREATE TABLE statements
 7. ❌ Don't run Python scripts from wrong directory - MUST be ITDB root
 8. ❌ Don't modify database schema without creating migration file
 
-## Recent Session Work (Nov 1, 2025)
-- Implemented comprehensive audit logging system with role-based access
+## ML Features (Nov 14, 2025)
+
+### Machine Learning Stack
+- **Models**: Random Forest classifiers (scikit-learn) for type/priority prediction
+- **Sentiment**: HuggingFace DistilBERT (distilbert-base-uncased-finetuned-sst-2-english)
+- **Service**: Flask microservice on port 5001 with CORS enabled
+- **Integration**: Express proxy endpoints at `/api/ml/*` with authentication
+- **Training Data**: `english_support_tickets.csv` (11,923 tickets)
+
+### Model Performance
+- **Type Classification**: 80.38% accuracy (300 estimators, 5000 TF-IDF features, trigrams)
+- **Priority Prediction**: 57.11% accuracy (same configuration)
+- **Sentiment Analysis**: Pre-trained model with emotion mapping (angry/frustrated/concerned/neutral/satisfied)
+
+### ML Service Startup (CRITICAL)
+```powershell
+# Terminal 1: ML Service (MUST be running first)
+cd C:\Users\Kalvin\OneDrive\ITDB
+.\venv\Scripts\Activate.ps1
+cd ml_models
+python ml_service.py  # Port 5001
+
+# Terminal 2: Express Server
+cd ticket-app\server
+npm run dev  # Port 3001
+
+# Terminal 3: React Client  
+cd ticket-app\client
+npm run dev  # Port 5173
+```
+
+**Why this matters**: Express `/api/ml/*` endpoints proxy to Flask service. If Flask is down, you get 503 errors. Always check Flask is running with `netstat -ano | findstr :5001`.
+
+### ML API Response Structure (CRITICAL)
+```typescript
+// /api/ml/predict-full returns nested structure:
+{
+  category: {
+    type: "incident",              // Direct string
+    confidence: 0.85,              // Direct number
+    priority: {                    // NESTED object!
+      prediction: "high",          // The actual priority value
+      confidence: 0.72             // The priority confidence
+    }
+  },
+  sentiment: {
+    sentiment: "NEGATIVE",
+    score: 0.92,
+    emotion: "angry",
+    urgency_flag: true
+  }
+}
+
+// UI must access: mlPredictions.category.priority.prediction (not .priority directly)
+```
+
+**Type Normalization**: Flask returns lowercase types (`incident`, `request`, `problem`, `question`) to match API validation requirements. CSV data is capitalized but mapped during prediction.
+
+### ML UI Integration Pattern
+**User Ticket Creation** (`CreateTicket.tsx`):
+- Toggle button for ML suggestions (🤖 ML ON/OFF)
+- 800ms debounce on text input using `useRef<NodeJS.Timeout>` (prevents API spam)
+- Real-time predictions shown in suggestion cards with confidence %
+- Apply buttons to auto-fill type/priority fields
+- Sentiment display with emoji indicators and urgency flags
+
+**Employee Ticket Creation** (`TicketList.tsx`):
+- Same ML features in modal create form
+- Uses `mlDebounceTimer = useRef<NodeJS.Timeout | null>(null)` for debouncing
+- Defensive `typeof` checks for nested priority object
+- Character counters (title: 5-500, description: 10-5000)
+- Disabled submit button when validation fails
+- Red border + inline error messages for invalid inputs
+
+### Common ML Issues & Solutions
+1. **429 Too Many Requests**: Removed `apiLimiter` from `mlRoutes.ts` - ML endpoints use only `authenticate` middleware
+2. **React "Objects not valid as React child"**: Priority is nested object `{prediction, confidence}` - must access `.prediction`
+3. **ML service not reloading**: Use `Stop-Process -Name python -Force` to kill all Python processes before restarting
+4. **Type capitalization errors**: Flask maps CSV capitalized types (`Incident` → `incident`, `Change` → `question`)
+5. **Employee ID undefined**: Use `req.employee.id` not `req.user.employeeId` for employee-created tickets
+
+### ML Files Reference
+- `ml_models/train_classifier.py` (314 lines) - Enhanced Random Forest training with balanced classes
+- `ml_models/sentiment_analyzer.py` (149 lines) - DistilBERT wrapper with emotion mapping
+- `ml_models/ml_service.py` (305 lines) - Flask API with type normalization at lines 112-140 (category), 215-245 (full)
+- `ticket-app/server/src/controllers/mlController.ts` (165 lines) - Express proxy with axios error handling
+- `ticket-app/server/src/routes/mlRoutes.ts` - ML routes (NO rate limiting!)
+- `ticket-app/client/src/pages/CreateTicket.tsx` (620 lines) - User ML UI
+- `ticket-app/client/src/components/TicketList.tsx` (1539 lines) - Employee ML UI with validation
+
+### ML Training & Retraining
+```powershell
+cd ml_models
+python train_classifier.py  # Updates models in ml_models/models/ directory
+# Restart ml_service.py to reload models
+```
+
+Models stored: `vectorizer.pkl`, `type_classifier.pkl`, `priority_classifier.pkl`, `metadata.json`
+
+## Form Validation Pattern (Nov 14, 2025)
+
+### Character Counter & Validation UI
+```typescript
+// Real-time validation feedback pattern
+<div style={{ display: 'flex', justifyContent: 'space-between' }}>
+  <label>Title *</label>
+  <span style={{ color: title.length < 5 ? '#ef4444' : '#10b981' }}>
+    {title.length}/500 (min: 5)
+  </span>
+</div>
+<input 
+  style={{ borderColor: title.length > 0 && title.length < 5 ? '#ef4444' : '#d1d5db' }}
+  placeholder="Brief description (minimum 5 characters)"
+/>
+{title.length > 0 && title.length < 5 && (
+  <div style={styles.validationError}>⚠️ Title must be at least 5 characters</div>
+)}
+```
+
+**Validation Requirements** (from `validateTicketCreation` middleware):
+- Title: 5-500 characters (trimmed)
+- Description: 10-5000 characters (trimmed)
+- Type: one of `['request', 'problem', 'incident', 'question']`
+- Priority: one of `['low', 'medium', 'high']`
+
+**Submit Button State**:
+```typescript
+<button 
+  disabled={title.length < 5 || description.length < 10}
+  style={{ opacity: isInvalid ? 0.5 : 1, cursor: isInvalid ? 'not-allowed' : 'pointer' }}
+>
+  Create Ticket
+</button>
+```
+
+## Recent Session Work
+
+### Nov 1, 2025 - Audit Logging System
+- Implemented comprehensive audit logging with role-based access
 - Created `view_audit_logs` permission (ID: 16) with admin-only assignment
 - Built professional audit logs UI with modal detail view (AuditLogs.tsx)
 - Added refresh permissions feature (no logout required)
 - Fixed timezone display (UTC → local), navigation bugs, permission schema issues
-- See README.md "Full Session Summary" for complete details
+
+### Nov 14, 2025 - ML Integration & Validation
+- Trained Random Forest models (80.38% type accuracy, 57.11% priority)
+- Built Flask ML microservice with 5 endpoints on port 5001
+- Created Express ML proxy with authentication (`mlController.ts`, `mlRoutes.ts`)
+- Integrated ML suggestions in user ticket creation with toggle UI
+- Extended ML features to employee ticket creation modal
+- Fixed debounce issues using `useRef` for timer persistence
+- Fixed React rendering errors with nested priority object structure
+- Fixed employee ID extraction (`req.employee.id` vs `req.user.employeeId`)
+- Added character counters, real-time validation, and disabled submit states
+- Removed rate limiting from ML endpoints (was causing 429 errors)
 
 ## Testing Strategy
 - **Python**: pytest in `tests/` directory
 - **Backend**: No framework configured (consider Jest/Vitest)
 - **Frontend**: No framework configured (consider Vitest + React Testing Library)
+- **ML Models**: Train on full dataset, validate with cross-validation in `train_classifier.py`

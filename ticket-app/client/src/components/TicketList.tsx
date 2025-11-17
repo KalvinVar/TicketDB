@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import api from '../services/api';
@@ -7,6 +7,7 @@ import { Ticket, TicketNote } from '../types';
 const TicketList: React.FC = () => {
     const { token, employee, hasPermission } = useAuth();
     const navigate = useNavigate();
+    const mlDebounceTimer = useRef<NodeJS.Timeout | null>(null);
     
     // Check if user has permission to view tickets
     useEffect(() => {
@@ -53,6 +54,12 @@ const TicketList: React.FC = () => {
         department_id: '',
         assigned_to: ''
     });
+    
+    // ML suggestion states
+    const [showMLSuggestions, setShowMLSuggestions] = useState<boolean>(false);
+    const [mlPredictions, setMlPredictions] = useState<any>(null);
+    const [mlLoading, setMlLoading] = useState<boolean>(false);
+    const [mlError, setMlError] = useState<string | null>(null);
     
     // Notes for selected ticket
     const [ticketNotes, setTicketNotes] = useState<TicketNote[]>([]);
@@ -220,6 +227,7 @@ const TicketList: React.FC = () => {
         }
         
         try {
+            console.log('Submitting ticket:', createForm);
             await api.post('/tickets/employee/create', createForm, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -227,8 +235,62 @@ const TicketList: React.FC = () => {
             fetchTickets();
             alert('Ticket created successfully');
         } catch (err: any) {
+            console.error('Create ticket error:', err.response?.data);
             alert('Failed to create ticket: ' + (err.response?.data?.error || err.message));
         }
+    };
+    
+    // ML Predictions with debounce
+    const fetchMLPredictions = async () => {
+        const { title, description } = createForm;
+        
+        if (!title.trim() && !description.trim()) {
+            setMlPredictions(null);
+            return;
+        }
+        
+        if (title.trim().length < 5 && description.trim().length < 10) {
+            return;
+        }
+        
+        setMlLoading(true);
+        setMlError(null);
+        
+        try {
+            const response = await api.post('/ml/predict-full', {
+                title: title,
+                description: description
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            console.log('Employee ML predictions received:', response.data);
+            console.log('Category structure:', response.data.category);
+            console.log('Type:', response.data.category.type);
+            console.log('Priority:', response.data.category.priority);
+            setMlPredictions(response.data);
+        } catch (err: any) {
+            console.error('ML prediction error:', err);
+            setMlError(err.response?.data?.error || 'Failed to get ML predictions');
+        } finally {
+            setMlLoading(false);
+        }
+    };
+    
+    const debouncedMLPredictions = () => {
+        if (mlDebounceTimer.current) {
+            clearTimeout(mlDebounceTimer.current);
+        }
+        mlDebounceTimer.current = setTimeout(() => {
+            if (showMLSuggestions) {
+                fetchMLPredictions();
+            }
+        }, 800);
+    };
+    
+    const applyMLSuggestion = (field: string, value: string) => {
+        console.log(`Applying ML suggestion: ${field} = ${value}`);
+        setCreateForm({ ...createForm, [field]: value });
     };
     
     // Filter tickets
@@ -680,31 +742,190 @@ const TicketList: React.FC = () => {
                     <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
                         <div style={styles.modalHeader}>
                             <h2>Create New Ticket</h2>
-                            <button onClick={() => setShowCreateTicketModal(false)} style={styles.closeButton}>×</button>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                <button 
+                                    onClick={() => {
+                                        setShowMLSuggestions(!showMLSuggestions);
+                                        if (!showMLSuggestions && createForm.title && createForm.description) {
+                                            fetchMLPredictions();
+                                        }
+                                    }}
+                                    style={{
+                                        ...styles.mlToggleButton,
+                                        backgroundColor: showMLSuggestions ? '#10b981' : '#6b7280'
+                                    }}
+                                >
+                                    🤖 {showMLSuggestions ? 'ML ON' : 'ML OFF'}
+                                </button>
+                                <button onClick={() => setShowCreateTicketModal(false)} style={styles.closeButton}>×</button>
+                            </div>
                         </div>
                         
                         <div style={styles.modalBody}>
                             <div style={styles.formGroup}>
-                                <label style={styles.label}>Title *</label>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={styles.label}>Title *</label>
+                                    <span style={{
+                                        fontSize: '12px',
+                                        color: createForm.title.length < 5 ? '#ef4444' : '#10b981'
+                                    }}>
+                                        {createForm.title.length}/500 (min: 5)
+                                    </span>
+                                </div>
                                 <input
                                     type="text"
                                     value={createForm.title}
-                                    onChange={(e) => setCreateForm({...createForm, title: e.target.value})}
-                                    style={styles.input}
-                                    placeholder="Brief description of the issue"
+                                    onChange={(e) => {
+                                        setCreateForm({...createForm, title: e.target.value});
+                                        debouncedMLPredictions();
+                                    }}
+                                    style={{
+                                        ...styles.input,
+                                        borderColor: createForm.title.length > 0 && createForm.title.length < 5 ? '#ef4444' : '#d1d5db'
+                                    }}
+                                    placeholder="Brief description of the issue (minimum 5 characters)"
                                 />
+                                {createForm.title.length > 0 && createForm.title.length < 5 && (
+                                    <div style={styles.validationError}>
+                                        ⚠️ Title must be at least 5 characters
+                                    </div>
+                                )}
                             </div>
                             
                             <div style={styles.formGroup}>
-                                <label style={styles.label}>Description *</label>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={styles.label}>Description *</label>
+                                    <span style={{
+                                        fontSize: '12px',
+                                        color: createForm.description.length < 10 ? '#ef4444' : '#10b981'
+                                    }}>
+                                        {createForm.description.length}/5000 (min: 10)
+                                    </span>
+                                </div>
                                 <textarea
                                     value={createForm.description}
-                                    onChange={(e) => setCreateForm({...createForm, description: e.target.value})}
-                                    style={styles.textarea}
+                                    onChange={(e) => {
+                                        setCreateForm({...createForm, description: e.target.value});
+                                        debouncedMLPredictions();
+                                    }}
+                                    style={{
+                                        ...styles.textarea,
+                                        borderColor: createForm.description.length > 0 && createForm.description.length < 10 ? '#ef4444' : '#d1d5db'
+                                    }}
                                     rows={5}
-                                    placeholder="Detailed description..."
+                                    placeholder="Detailed description (minimum 10 characters)..."
                                 />
+                                {createForm.description.length > 0 && createForm.description.length < 10 && (
+                                    <div style={styles.validationError}>
+                                        ⚠️ Description must be at least 10 characters
+                                    </div>
+                                )}
                             </div>
+                            
+                            {/* ML Suggestions */}
+                            {showMLSuggestions && (
+                                <div style={styles.mlSuggestionsBox}>
+                                    <h3 style={styles.mlSuggestionsTitle}>
+                                        🤖 AI Suggestions
+                                        {mlLoading && <span style={styles.mlLoadingText}> (Analyzing...)</span>}
+                                    </h3>
+                                    
+                                    {mlError && (
+                                        <div style={styles.mlError}>⚠️ {mlError}</div>
+                                    )}
+                                    
+                                    {mlPredictions && !mlLoading && (
+                                        <div style={styles.mlSuggestionsGrid}>
+                                            {/* Type Suggestion */}
+                                            <div style={styles.mlSuggestionCard}>
+                                                <div style={styles.mlSuggestionHeader}>
+                                                    <span style={styles.mlSuggestionLabel}>Suggested Type</span>
+                                                    <span style={styles.mlConfidence}>
+                                                        {typeof mlPredictions.category.type === 'object' 
+                                                            ? (mlPredictions.category.type.confidence * 100).toFixed(1)
+                                                            : (mlPredictions.category.confidence * 100).toFixed(1)
+                                                        }% confident
+                                                    </span>
+                                                </div>
+                                                <div style={styles.mlSuggestionValue}>
+                                                    {typeof mlPredictions.category.type === 'object' 
+                                                        ? mlPredictions.category.type.prediction 
+                                                        : mlPredictions.category.type
+                                                    }
+                                                </div>
+                                                <button
+                                                    onClick={() => applyMLSuggestion('type', 
+                                                        typeof mlPredictions.category.type === 'object' 
+                                                            ? mlPredictions.category.type.prediction 
+                                                            : mlPredictions.category.type
+                                                    )}
+                                                    style={styles.mlApplyButton}
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                            
+                                            {/* Priority Suggestion */}
+                                            <div style={styles.mlSuggestionCard}>
+                                                <div style={styles.mlSuggestionHeader}>
+                                                    <span style={styles.mlSuggestionLabel}>Suggested Priority</span>
+                                                    <span style={styles.mlConfidence}>
+                                                        {typeof mlPredictions.category.priority === 'object'
+                                                            ? (mlPredictions.category.priority.confidence * 100).toFixed(1)
+                                                            : 'N/A'
+                                                        }% confident
+                                                    </span>
+                                                </div>
+                                                <div style={styles.mlSuggestionValue}>
+                                                    {typeof mlPredictions.category.priority === 'object'
+                                                        ? mlPredictions.category.priority.prediction
+                                                        : mlPredictions.category.priority
+                                                    }
+                                                </div>
+                                                <button
+                                                    onClick={() => applyMLSuggestion('priority', 
+                                                        typeof mlPredictions.category.priority === 'object'
+                                                            ? mlPredictions.category.priority.prediction
+                                                            : mlPredictions.category.priority
+                                                    )}
+                                                    style={styles.mlApplyButton}
+                                                >
+                                                    Apply
+                                                </button>
+                                            </div>
+                                            
+                                            {/* Sentiment Analysis */}
+                                            {mlPredictions.sentiment && (
+                                                <div style={styles.mlSuggestionCard}>
+                                                    <div style={styles.mlSuggestionHeader}>
+                                                        <span style={styles.mlSuggestionLabel}>Sentiment Analysis</span>
+                                                        <span style={styles.mlConfidence}>
+                                                            {(mlPredictions.sentiment.score * 100).toFixed(1)}% confident
+                                                        </span>
+                                                    </div>
+                                                    <div style={styles.mlSentimentDisplay}>
+                                                        <span style={styles.mlSentimentEmoji}>
+                                                            {mlPredictions.sentiment.emotion === 'angry' && '😡'}
+                                                            {mlPredictions.sentiment.emotion === 'frustrated' && '😤'}
+                                                            {mlPredictions.sentiment.emotion === 'concerned' && '😟'}
+                                                            {mlPredictions.sentiment.emotion === 'neutral' && '😐'}
+                                                            {mlPredictions.sentiment.emotion === 'satisfied' && '😊'}
+                                                        </span>
+                                                        <span style={styles.mlSentimentText}>
+                                                            {mlPredictions.sentiment.emotion}
+                                                        </span>
+                                                    </div>
+                                                    {mlPredictions.sentiment.urgency_flag && (
+                                                        <div style={styles.mlUrgencyFlag}>
+                                                            ⚠️ High urgency detected
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             
                             <div style={styles.formRow}>
                                 <div style={styles.formGroup}>
@@ -770,7 +991,17 @@ const TicketList: React.FC = () => {
                             </div>
                             
                             <div style={styles.modalActions}>
-                                <button onClick={submitCreateTicket} style={styles.submitButton}>Create Ticket</button>
+                                <button 
+                                    onClick={submitCreateTicket} 
+                                    style={{
+                                        ...styles.submitButton,
+                                        opacity: createForm.title.length < 5 || createForm.description.length < 10 ? 0.5 : 1,
+                                        cursor: createForm.title.length < 5 || createForm.description.length < 10 ? 'not-allowed' : 'pointer'
+                                    }}
+                                    disabled={createForm.title.length < 5 || createForm.description.length < 10}
+                                >
+                                    Create Ticket
+                                </button>
                                 <button onClick={() => setShowCreateTicketModal(false)} style={styles.cancelButton}>Cancel</button>
                             </div>
                         </div>
@@ -1194,6 +1425,121 @@ const styles: { [key: string]: React.CSSProperties } = {
         borderRadius: '5px',
         cursor: 'pointer',
         fontSize: '14px'
+    },
+    mlToggleButton: {
+        padding: '8px 16px',
+        color: 'white',
+        border: 'none',
+        borderRadius: '5px',
+        cursor: 'pointer',
+        fontSize: '14px',
+        fontWeight: 'bold',
+        transition: 'background-color 0.2s'
+    },
+    mlSuggestionsBox: {
+        backgroundColor: '#f0f9ff',
+        border: '2px solid #3b82f6',
+        borderRadius: '8px',
+        padding: '16px',
+        marginBottom: '20px'
+    },
+    mlSuggestionsTitle: {
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#1e40af',
+        marginBottom: '12px'
+    },
+    mlLoadingText: {
+        fontSize: '14px',
+        fontWeight: 'normal',
+        color: '#6b7280'
+    },
+    mlError: {
+        backgroundColor: '#fee2e2',
+        border: '1px solid #ef4444',
+        borderRadius: '5px',
+        padding: '10px',
+        color: '#991b1b',
+        fontSize: '14px'
+    },
+    mlSuggestionsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '12px'
+    },
+    mlSuggestionCard: {
+        backgroundColor: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '6px',
+        padding: '12px'
+    },
+    mlSuggestionHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '8px'
+    },
+    mlSuggestionLabel: {
+        fontSize: '12px',
+        fontWeight: 'bold',
+        color: '#6b7280',
+        textTransform: 'uppercase'
+    },
+    mlConfidence: {
+        fontSize: '11px',
+        color: '#10b981',
+        fontWeight: 'bold'
+    },
+    mlSuggestionValue: {
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#1f2937',
+        marginBottom: '8px',
+        textTransform: 'capitalize'
+    },
+    mlApplyButton: {
+        width: '100%',
+        padding: '6px 12px',
+        backgroundColor: '#3b82f6',
+        color: 'white',
+        border: 'none',
+        borderRadius: '4px',
+        cursor: 'pointer',
+        fontSize: '13px',
+        fontWeight: 'bold'
+    },
+    mlSentimentDisplay: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        marginBottom: '8px'
+    },
+    mlSentimentEmoji: {
+        fontSize: '24px'
+    },
+    mlSentimentText: {
+        fontSize: '16px',
+        fontWeight: 'bold',
+        color: '#1f2937',
+        textTransform: 'capitalize'
+    },
+    mlUrgencyFlag: {
+        backgroundColor: '#fef3c7',
+        border: '1px solid #f59e0b',
+        borderRadius: '4px',
+        padding: '6px',
+        fontSize: '12px',
+        color: '#92400e',
+        fontWeight: 'bold',
+        textAlign: 'center'
+    },
+    validationError: {
+        color: '#ef4444',
+        fontSize: '12px',
+        marginTop: '4px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '4px'
     }
 };
 

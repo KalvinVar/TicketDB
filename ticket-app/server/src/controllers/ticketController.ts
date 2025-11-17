@@ -414,7 +414,7 @@ export const createEmployeeTicket = (req: Request, res: Response) => {
     assigned_to
   } = req.body;
   
-  const employeeId = (req as any).user.employeeId;
+  const employeeId = (req as any).employee.id;
   
   // Input validation
   if (!title || !description) {

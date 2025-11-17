@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import ticketRoutes from './routes/ticketRoutes';
 import authRoutes from './routes/authRoutes';
 import adminRoutes from './routes/adminRoutes';
+import mlRoutes from './routes/mlRoutes';
 
 // Load environment variables FIRST
 dotenv.config();
@@ -26,6 +27,7 @@ app.use(express.json());
 app.use('/api', ticketRoutes);
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
+app.use('/api', mlRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -37,4 +39,5 @@ app.listen(PORT, () => {
   console.log(`API available at http://localhost:${PORT}/api/tickets`);
   console.log(`Auth endpoints: /api/auth/user/login, /api/auth/employee/login`);
   console.log(`Admin endpoints: /api/employees, /api/departments`);
+  console.log(`ML endpoints: /api/ml/predict-category, /api/ml/analyze-sentiment`);
 });
