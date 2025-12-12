@@ -51,6 +51,19 @@ const UserDashboard: React.FC = () => {
             View My Tickets
           </button>
         </div>
+
+        <div style={styles.card}>
+          <h2 style={styles.cardTitle}>📚 Knowledge Base</h2>
+          <p style={styles.cardText}>
+            Browse helpful articles and find answers to common questions.
+          </p>
+          <button
+            onClick={() => navigate('/user/knowledge-base')}
+            style={styles.secondaryButton}
+          >
+            Browse Articles
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -59,12 +72,12 @@ const UserDashboard: React.FC = () => {
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     minHeight: '100vh',
-    background: '#f9fafb',
+    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
   },
   header: {
-    background: 'white',
-    padding: '20px 40px',
-    borderBottom: '1px solid #e5e7eb',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    padding: '24px 48px',
+    boxShadow: '0 4px 20px rgba(102, 126, 234, 0.3)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -74,72 +87,83 @@ const styles: { [key: string]: React.CSSProperties } = {
     flexDirection: 'column',
   },
   title: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: '28px',
+    fontWeight: '800',
+    color: 'white',
     margin: 0,
   },
   welcome: {
-    fontSize: '14px',
-    color: '#6b7280',
-    margin: '4px 0 0 0',
+    fontSize: '15px',
+    color: 'rgba(255, 255, 255, 0.9)',
+    margin: '6px 0 0 0',
+    fontWeight: '500',
   },
   logoutButton: {
-    padding: '10px 20px',
-    background: '#ef4444',
+    padding: '12px 24px',
+    background: 'rgba(255, 255, 255, 0.2)',
     color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '12px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
+    transition: 'all 0.3s',
+    backdropFilter: 'blur(10px)',
   },
   content: {
     maxWidth: '1200px',
-    margin: '40px auto',
-    padding: '0 40px',
+    margin: '48px auto',
+    padding: '0 48px',
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '30px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '32px',
   },
   card: {
     background: 'white',
-    padding: '30px',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    padding: '36px',
+    borderRadius: '20px',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(102, 126, 234, 0.1)',
+    transition: 'all 0.3s',
   },
   cardTitle: {
-    fontSize: '20px',
-    fontWeight: 'bold',
-    color: '#111827',
-    margin: '0 0 10px 0',
+    fontSize: '24px',
+    fontWeight: '800',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    margin: '0 0 12px 0',
   },
   cardText: {
-    fontSize: '14px',
+    fontSize: '15px',
     color: '#6b7280',
-    margin: '0 0 20px 0',
+    margin: '0 0 24px 0',
+    lineHeight: '1.6',
   },
   primaryButton: {
-    padding: '12px 24px',
-    background: '#667eea',
+    padding: '14px 28px',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     color: 'white',
     border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
+    borderRadius: '12px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
     width: '100%',
+    transition: 'all 0.3s',
+    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
   },
   secondaryButton: {
-    padding: '12px 24px',
-    background: '#f3f4f6',
+    padding: '14px 28px',
+    background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
     color: '#374151',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
+    border: '2px solid #d1d5db',
+    borderRadius: '12px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
     width: '100%',
+    transition: 'all 0.3s',
   },
 };
 

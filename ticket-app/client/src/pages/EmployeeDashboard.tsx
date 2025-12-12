@@ -122,6 +122,21 @@ const EmployeeDashboard: React.FC = () => {
           </div>
         )}
 
+        {(isAdmin || hasPermission('view_all_tickets')) && (
+          <div style={styles.card}>
+            <h2 style={styles.cardTitle}>📊 Analytics Dashboard</h2>
+            <p style={styles.cardText}>
+              View comprehensive analytics including ticket trends, agent performance, department metrics, and resolution times with exportable reports.
+            </p>
+            <button
+              onClick={() => navigate('/employee/analytics')}
+              style={styles.primaryButton}
+            >
+              View Analytics
+            </button>
+          </div>
+        )}
+
         {(isAdmin || hasPermission('admin_access') || hasPermission('view_audit_logs')) && (
           <div style={styles.card}>
             <h2 style={styles.cardTitle}>🔒 Security Audit Logs</h2>
@@ -171,12 +186,12 @@ const EmployeeDashboard: React.FC = () => {
 const styles: { [key: string]: React.CSSProperties } = {
   container: {
     minHeight: '100vh',
-    background: '#f9fafb',
+    background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
   },
   header: {
-    background: 'white',
-    padding: '20px 40px',
-    borderBottom: '1px solid #e5e7eb',
+    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    padding: '24px 48px',
+    boxShadow: '0 4px 20px rgba(16, 185, 129, 0.3)',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -191,94 +206,107 @@ const styles: { [key: string]: React.CSSProperties } = {
     alignItems: 'center',
   },
   title: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    color: '#111827',
+    fontSize: '28px',
+    fontWeight: '800',
+    color: 'white',
     margin: 0,
   },
   welcome: {
-    fontSize: '14px',
-    color: '#6b7280',
-    margin: '4px 0 0 0',
+    fontSize: '15px',
+    color: 'rgba(255, 255, 255, 0.9)',
+    margin: '6px 0 0 0',
+    fontWeight: '500',
   },
   refreshButton: {
-    padding: '10px 20px',
-    background: '#3b82f6',
+    padding: '12px 24px',
+    background: 'rgba(59, 130, 246, 0.9)',
     color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
+    border: '2px solid rgba(255, 255, 255, 0.2)',
+    borderRadius: '12px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
-    transition: 'opacity 0.2s',
+    transition: 'all 0.3s',
+    backdropFilter: 'blur(10px)',
   },
   logoutButton: {
-    padding: '10px 20px',
-    background: '#ef4444',
+    padding: '12px 24px',
+    background: 'rgba(255, 255, 255, 0.2)',
     color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
+    border: '2px solid rgba(255, 255, 255, 0.3)',
+    borderRadius: '12px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
+    transition: 'all 0.3s',
+    backdropFilter: 'blur(10px)',
   },
   content: {
     maxWidth: '1200px',
-    margin: '40px auto',
-    padding: '0 40px',
+    margin: '48px auto',
+    padding: '0 48px',
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '30px',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '32px',
   },
   card: {
     background: 'white',
-    padding: '30px',
-    borderRadius: '12px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    padding: '36px',
+    borderRadius: '20px',
+    boxShadow: '0 10px 40px rgba(0,0,0,0.08)',
+    border: '1px solid rgba(16, 185, 129, 0.1)',
+    transition: 'all 0.3s',
   },
   cardTitle: {
-    fontSize: '20px',
-    fontWeight: 'bold',
-    color: '#111827',
-    margin: '0 0 10px 0',
+    fontSize: '24px',
+    fontWeight: '800',
+    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    margin: '0 0 12px 0',
   },
   cardText: {
-    fontSize: '14px',
+    fontSize: '15px',
     color: '#6b7280',
-    margin: '0 0 20px 0',
+    margin: '0 0 24px 0',
+    lineHeight: '1.6',
   },
   primaryButton: {
-    padding: '12px 24px',
-    background: '#10b981',
+    padding: '14px 28px',
+    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
     color: 'white',
     border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    fontWeight: '600',
+    borderRadius: '12px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
     width: '100%',
+    transition: 'all 0.3s',
+    boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)',
   },
   permissions: {
     display: 'flex',
     flexWrap: 'wrap',
-    gap: '8px',
-    marginTop: '16px',
+    gap: '10px',
+    marginTop: '20px',
   },
   badge: {
-    padding: '4px 12px',
-    background: '#dbeafe',
+    padding: '6px 16px',
+    background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
     color: '#1e40af',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '600',
+    borderRadius: '20px',
+    fontSize: '13px',
+    fontWeight: '700',
     textTransform: 'capitalize',
+    border: '1px solid #93c5fd',
   },
   messageBar: {
-    padding: '12px 40px',
-    fontSize: '14px',
+    padding: '16px 48px',
+    fontSize: '15px',
     fontWeight: '600',
     textAlign: 'center',
     margin: '0',
+    borderRadius: '0',
   },
 };
 

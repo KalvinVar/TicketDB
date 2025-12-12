@@ -10,6 +10,8 @@ import UserTickets from './pages/UserTickets';
 import TicketList from './components/TicketList';
 import ManageEmployees from './pages/ManageEmployees';
 import AuditLogs from './pages/AuditLogs';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import KnowledgeBase from './pages/KnowledgeBase';
 
 function App() {
   return (
@@ -51,6 +53,15 @@ function App() {
             }
           />
           
+          <Route
+            path="/user/knowledge-base"
+            element={
+              <ProtectedRoute>
+                <KnowledgeBase />
+              </ProtectedRoute>
+            }
+          />
+          
           {/* Protected employee routes */}
           <Route
             path="/employee/dashboard"
@@ -84,6 +95,15 @@ function App() {
             element={
               <ProtectedRoute requireEmployee>
                 <AuditLogs />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/employee/analytics"
+            element={
+              <ProtectedRoute requireEmployee>
+                <AnalyticsDashboard />
               </ProtectedRoute>
             }
           />

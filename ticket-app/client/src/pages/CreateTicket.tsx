@@ -406,213 +406,232 @@ const CreateTicket = () => {
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)',
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
     padding: '20px'
   },
   card: {
-    background: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-    padding: '40px',
+    background: 'rgba(255, 255, 255, 0.98)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '24px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+    padding: '48px',
     width: '100%',
-    maxWidth: '700px'
+    maxWidth: '750px',
+    border: '1px solid rgba(255,255,255,0.3)'
   },
   successCard: {
-    background: 'white',
-    borderRadius: '12px',
-    boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-    padding: '60px',
+    background: 'rgba(255, 255, 255, 0.98)',
+    backdropFilter: 'blur(10px)',
+    borderRadius: '24px',
+    boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+    padding: '72px',
     textAlign: 'center' as const
   },
   header: {
-    marginBottom: '30px',
+    marginBottom: '36px',
     textAlign: 'center' as const
   },
   title: {
-    fontSize: '32px',
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: '10px'
+    fontSize: '36px',
+    fontWeight: '800',
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    WebkitBackgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    marginBottom: '12px'
   },
   subtitle: {
-    fontSize: '16px',
-    color: '#6b7280'
+    fontSize: '17px',
+    color: '#6b7280',
+    fontWeight: '500'
   },
   form: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '20px'
+    gap: '24px'
   },
   formGroup: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '8px'
+    gap: '10px'
   },
   formRow: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '20px'
+    gap: '24px'
   },
   label: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#374151'
+    fontSize: '15px',
+    fontWeight: '700',
+    color: '#1f2937'
   },
   input: {
-    padding: '12px',
+    padding: '14px 18px',
     fontSize: '16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '12px',
     outline: 'none',
-    transition: 'border-color 0.2s'
+    transition: 'all 0.2s',
+    backgroundColor: '#f9fafb'
   },
   textarea: {
-    padding: '12px',
+    padding: '14px 18px',
     fontSize: '16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '12px',
     outline: 'none',
     resize: 'vertical' as const,
     fontFamily: 'inherit',
-    transition: 'border-color 0.2s'
+    transition: 'all 0.2s',
+    backgroundColor: '#f9fafb',
+    minHeight: '120px'
   },
   select: {
-    padding: '12px',
+    padding: '14px 18px',
     fontSize: '16px',
-    border: '1px solid #d1d5db',
-    borderRadius: '8px',
+    border: '2px solid #e5e7eb',
+    borderRadius: '12px',
     outline: 'none',
-    backgroundColor: 'white',
-    cursor: 'pointer',
-    transition: 'border-color 0.2s'
-  },
-  errorBox: {
-    backgroundColor: '#fee2e2',
-    border: '1px solid #ef4444',
-    color: '#dc2626',
-    padding: '12px',
-    borderRadius: '8px',
-    fontSize: '14px'
-  },
-  buttonGroup: {
-    display: 'flex',
-    gap: '12px',
-    marginTop: '10px'
-  },
-  cancelButton: {
-    flex: 1,
-    padding: '14px',
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#6b7280',
-    backgroundColor: '#f3f4f6',
-    border: 'none',
-    borderRadius: '8px',
+    backgroundColor: '#f9fafb',
     cursor: 'pointer',
     transition: 'all 0.2s'
   },
+  errorBox: {
+    backgroundColor: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+    border: '2px solid #ef4444',
+    color: '#dc2626',
+    padding: '16px',
+    borderRadius: '12px',
+    fontSize: '15px',
+    fontWeight: '600'
+  },
+  buttonGroup: {
+    display: 'flex',
+    gap: '16px',
+    marginTop: '12px'
+  },
+  cancelButton: {
+    flex: 1,
+    padding: '16px',
+    fontSize: '16px',
+    fontWeight: '700',
+    color: '#374151',
+    background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+    border: '2px solid #d1d5db',
+    borderRadius: '12px',
+    cursor: 'pointer',
+    transition: 'all 0.3s'
+  },
   submitButton: {
     flex: 2,
-    padding: '14px',
+    padding: '16px',
     fontSize: '16px',
-    fontWeight: '600',
+    fontWeight: '700',
     color: 'white',
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '12px',
     cursor: 'pointer',
-    transition: 'all 0.2s',
-    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)'
+    transition: 'all 0.3s',
+    boxShadow: '0 6px 20px rgba(102, 126, 234, 0.5)'
   },
   mlToggleButton: {
-    marginTop: '15px',
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontWeight: '600',
+    marginTop: '20px',
+    padding: '12px 24px',
+    fontSize: '15px',
+    fontWeight: '700',
     color: 'white',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '12px',
     cursor: 'pointer',
-    transition: 'all 0.2s',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)'
+    transition: 'all 0.3s',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
   },
   mlSuggestionsBox: {
-    backgroundColor: '#f0f9ff',
-    border: '2px solid #0ea5e9',
-    borderRadius: '10px',
-    padding: '20px',
-    marginTop: '10px'
+    background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+    border: '2px solid #38bdf8',
+    borderRadius: '16px',
+    padding: '24px',
+    marginTop: '12px',
+    boxShadow: '0 4px 20px rgba(14, 165, 233, 0.15)'
   },
   mlHeader: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '15px',
-    color: '#0c4a6e'
+    marginBottom: '20px',
+    color: '#0c4a6e',
+    fontWeight: '700'
   },
   mlContent: {
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: '15px'
+    gap: '18px'
   },
   mlSuggestion: {
     backgroundColor: 'white',
-    padding: '15px',
-    borderRadius: '8px',
-    border: '1px solid #e0f2fe'
+    padding: '18px',
+    borderRadius: '12px',
+    border: '2px solid #bae6fd',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
   },
   mlLabel: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    fontSize: '13px',
+    fontSize: '14px',
     color: '#64748b',
-    marginBottom: '8px'
+    marginBottom: '10px',
+    fontWeight: '600'
   },
   mlConfidence: {
-    fontSize: '12px',
-    padding: '3px 8px',
-    backgroundColor: '#dbeafe',
-    borderRadius: '4px',
-    color: '#1e40af'
+    fontSize: '13px',
+    padding: '4px 12px',
+    background: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+    borderRadius: '8px',
+    color: '#1e40af',
+    fontWeight: '700'
   },
   mlValue: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    fontSize: '16px',
-    color: '#1e293b'
+    fontSize: '17px',
+    color: '#0f172a',
+    fontWeight: '600'
   },
   applyButton: {
-    padding: '6px 16px',
-    fontSize: '13px',
-    fontWeight: '600',
+    padding: '8px 20px',
+    fontSize: '14px',
+    fontWeight: '700',
     color: 'white',
-    backgroundColor: '#0ea5e9',
+    background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
     border: 'none',
-    borderRadius: '6px',
+    borderRadius: '10px',
     cursor: 'pointer',
-    transition: 'background-color 0.2s'
+    transition: 'all 0.3s',
+    boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)'
   },
   sentimentBadge: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    padding: '10px',
-    backgroundColor: '#f8fafc',
-    borderRadius: '6px'
+    gap: '12px',
+    padding: '12px',
+    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+    borderRadius: '10px',
+    border: '2px solid #e2e8f0'
   },
   urgencyBadge: {
     marginLeft: 'auto',
-    padding: '4px 10px',
-    fontSize: '12px',
-    fontWeight: '600',
-    backgroundColor: '#fee2e2',
+    padding: '6px 14px',
+    fontSize: '13px',
+    fontWeight: '700',
+    background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
     color: '#dc2626',
-    borderRadius: '6px'
+    borderRadius: '10px',
+    border: '2px solid #fca5a5'
   }
 };
 

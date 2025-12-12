@@ -5,6 +5,8 @@ import ticketRoutes from './routes/ticketRoutes';
 import authRoutes from './routes/authRoutes';
 import adminRoutes from './routes/adminRoutes';
 import mlRoutes from './routes/mlRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import knowledgeBaseRoutes from './routes/knowledgeBaseRoutes';
 
 // Load environment variables FIRST
 dotenv.config();
@@ -12,6 +14,7 @@ dotenv.config();
 // Run migrations
 import './migrations/create_audit_logs';
 import { addViewAuditLogsPermission } from './migrations/add_view_audit_logs_permission';
+import './migrations/create_knowledge_base';
 
 // Execute migrations
 addViewAuditLogsPermission();
@@ -28,6 +31,8 @@ app.use('/api', ticketRoutes);
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', mlRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/kb', knowledgeBaseRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -40,4 +45,6 @@ app.listen(PORT, () => {
   console.log(`Auth endpoints: /api/auth/user/login, /api/auth/employee/login`);
   console.log(`Admin endpoints: /api/employees, /api/departments`);
   console.log(`ML endpoints: /api/ml/predict-category, /api/ml/analyze-sentiment`);
+  console.log(`Analytics endpoint: /api/analytics`);
+  console.log(`Knowledge Base: /api/kb/public/articles`);
 });

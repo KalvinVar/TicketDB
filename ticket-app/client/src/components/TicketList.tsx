@@ -1015,142 +1015,165 @@ const TicketList: React.FC = () => {
 // Styles
 const styles: { [key: string]: React.CSSProperties } = {
     container: {
-        padding: '20px',
+        padding: '32px',
         maxWidth: '1400px',
         margin: '0 auto',
-        backgroundColor: '#f9fafb'
+        background: 'linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%)',
+        minHeight: '100vh'
     },
     header: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '20px'
+        marginBottom: '32px'
     },
     backButton: {
-        padding: '10px 20px',
-        backgroundColor: '#6b7280',
+        padding: '12px 24px',
+        background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
         color: 'white',
         border: 'none',
-        borderRadius: '5px',
+        borderRadius: '12px',
         cursor: 'pointer',
-        fontSize: '14px'
+        fontSize: '15px',
+        fontWeight: '700',
+        transition: 'all 0.3s',
+        boxShadow: '0 4px 12px rgba(107, 114, 128, 0.3)'
     },
     title: {
-        fontSize: '28px',
-        fontWeight: 'bold',
-        color: '#1f2937',
+        fontSize: '36px',
+        fontWeight: '800',
+        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
         flex: 1,
         textAlign: 'center'
     },
     createButton: {
-        padding: '10px 20px',
-        backgroundColor: '#10b981',
+        padding: '12px 24px',
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
         color: 'white',
         border: 'none',
-        borderRadius: '5px',
+        borderRadius: '12px',
         cursor: 'pointer',
-        fontSize: '14px',
-        fontWeight: 'bold'
+        fontSize: '15px',
+        fontWeight: '700',
+        transition: 'all 0.3s',
+        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
     },
     filterBar: {
         display: 'flex',
-        gap: '10px',
-        marginBottom: '20px',
+        gap: '12px',
+        marginBottom: '28px',
         flexWrap: 'wrap'
     },
     searchInput: {
         flex: '2',
-        padding: '10px',
-        border: '1px solid #d1d5db',
-        borderRadius: '5px',
-        fontSize: '14px'
+        padding: '14px 18px',
+        border: '2px solid #e5e7eb',
+        borderRadius: '12px',
+        fontSize: '15px',
+        backgroundColor: 'white',
+        transition: 'all 0.2s'
     },
     select: {
-        padding: '10px',
-        border: '1px solid #d1d5db',
-        borderRadius: '5px',
-        fontSize: '14px',
-        backgroundColor: 'white'
+        padding: '14px 18px',
+        border: '2px solid #e5e7eb',
+        borderRadius: '12px',
+        fontSize: '15px',
+        backgroundColor: 'white',
+        fontWeight: '600',
+        cursor: 'pointer',
+        transition: 'all 0.2s'
     },
     clearButton: {
-        padding: '10px 20px',
-        backgroundColor: '#ef4444',
+        padding: '14px 24px',
+        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
         color: 'white',
         border: 'none',
-        borderRadius: '5px',
+        borderRadius: '12px',
         cursor: 'pointer',
-        fontSize: '14px'
+        fontSize: '15px',
+        fontWeight: '700',
+        transition: 'all 0.3s',
+        boxShadow: '0 4px 12px rgba(239, 68, 68, 0.3)'
     },
     stats: {
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '15px',
-        marginBottom: '20px'
+        gap: '20px',
+        marginBottom: '32px'
     },
     statCard: {
-        padding: '20px',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        textAlign: 'center'
+        padding: '28px',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)',
+        borderRadius: '20px',
+        boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+        textAlign: 'center',
+        border: '2px solid rgba(14, 165, 233, 0.1)',
+        transition: 'all 0.3s'
     },
     statValue: {
-        fontSize: '32px',
-        fontWeight: 'bold',
-        color: '#1f2937'
+        fontSize: '42px',
+        fontWeight: '800',
+        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent'
     },
     statLabel: {
-        fontSize: '14px',
+        fontSize: '15px',
         color: '#6b7280',
-        marginTop: '5px'
+        marginTop: '8px',
+        fontWeight: '600'
     },
     ticketsGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
-        gap: '20px',
-        marginBottom: '20px'
+        gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))',
+        gap: '24px',
+        marginBottom: '32px'
     },
     ticketCard: {
-        padding: '20px',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        transition: 'transform 0.2s, box-shadow 0.2s'
+        padding: '24px',
+        background: 'white',
+        borderRadius: '20px',
+        boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
+        transition: 'all 0.3s',
+        border: '2px solid transparent'
     },
     ticketHeader: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '10px'
+        marginBottom: '14px'
     },
     ticketId: {
-        fontSize: '14px',
-        fontWeight: 'bold',
-        color: '#6b7280'
+        fontSize: '15px',
+        fontWeight: '700',
+        color: '#0ea5e9'
     },
     badges: {
         display: 'flex',
-        gap: '5px'
+        gap: '8px'
     },
     badge: {
-        padding: '4px 8px',
-        borderRadius: '12px',
-        fontSize: '11px',
-        fontWeight: 'bold',
+        padding: '6px 12px',
+        borderRadius: '16px',
+        fontSize: '12px',
+        fontWeight: '700',
         color: 'white',
         textTransform: 'uppercase'
     },
     ticketTitle: {
-        fontSize: '18px',
-        fontWeight: 'bold',
+        fontSize: '19px',
+        fontWeight: '800',
         color: '#1f2937',
-        marginBottom: '10px'
+        marginBottom: '12px',
+        lineHeight: '1.4'
     },
     ticketDescription: {
-        fontSize: '14px',
+        fontSize: '15px',
         color: '#4b5563',
-        marginBottom: '15px',
-        lineHeight: '1.5',
+        marginBottom: '18px',
+        lineHeight: '1.6',
         wordWrap: 'break-word',
         overflowWrap: 'break-word'
     },
@@ -1170,20 +1193,22 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     ticketActions: {
         display: 'flex',
-        gap: '5px',
+        gap: '10px',
         flexWrap: 'wrap'
     },
     actionButton: {
-        padding: '8px 12px',
-        backgroundColor: '#10b981',
+        padding: '10px 16px',
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
         color: 'white',
         border: 'none',
-        borderRadius: '5px',
+        borderRadius: '10px',
         cursor: 'pointer',
-        fontSize: '12px',
-        fontWeight: 'bold',
+        fontSize: '13px',
+        fontWeight: '700',
         flex: 1,
-        minWidth: '80px'
+        minWidth: '90px',
+        transition: 'all 0.3s',
+        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
     },
     pagination: {
         display: 'flex',
@@ -1231,28 +1256,30 @@ const styles: { [key: string]: React.CSSProperties } = {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        backdropFilter: 'blur(4px)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000
     },
     modalContent: {
-        backgroundColor: 'white',
-        borderRadius: '10px',
-        maxWidth: '600px',
+        background: 'linear-gradient(135deg, #ffffff 0%, #f9fafb 100%)',
+        borderRadius: '24px',
+        maxWidth: '650px',
         width: '90%',
         maxHeight: '90vh',
         overflow: 'auto',
-        boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
-        overflowWrap: 'break-word'
+        boxShadow: '0 25px 80px rgba(0,0,0,0.25)',
+        overflowWrap: 'break-word',
+        border: '2px solid rgba(14, 165, 233, 0.1)'
     },
     modalHeader: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '20px',
-        borderBottom: '1px solid #e5e7eb'
+        padding: '28px',
+        borderBottom: '2px solid #e5e7eb'
     },
     closeButton: {
         background: 'none',
@@ -1367,21 +1394,26 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     input: {
         width: '100%',
-        padding: '10px',
-        border: '1px solid #d1d5db',
-        borderRadius: '5px',
-        fontSize: '14px',
-        boxSizing: 'border-box'
+        padding: '14px 18px',
+        border: '2px solid #e5e7eb',
+        borderRadius: '12px',
+        fontSize: '15px',
+        boxSizing: 'border-box',
+        backgroundColor: '#f9fafb',
+        transition: 'all 0.2s'
     },
     textarea: {
         width: '100%',
-        padding: '10px',
-        border: '1px solid #d1d5db',
-        borderRadius: '5px',
-        fontSize: '14px',
+        padding: '14px 18px',
+        border: '2px solid #e5e7eb',
+        borderRadius: '12px',
+        fontSize: '15px',
         fontFamily: 'inherit',
         resize: 'vertical',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        backgroundColor: '#f9fafb',
+        transition: 'all 0.2s',
+        minHeight: '100px'
     },
     checkboxGroup: {
         display: 'flex',
@@ -1408,23 +1440,27 @@ const styles: { [key: string]: React.CSSProperties } = {
         marginTop: '20px'
     },
     submitButton: {
-        padding: '10px 20px',
-        backgroundColor: '#10b981',
+        padding: '14px 28px',
+        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
         color: 'white',
         border: 'none',
-        borderRadius: '5px',
+        borderRadius: '12px',
         cursor: 'pointer',
-        fontSize: '14px',
-        fontWeight: 'bold'
+        fontSize: '15px',
+        fontWeight: '700',
+        transition: 'all 0.3s',
+        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
     },
     cancelButton: {
-        padding: '10px 20px',
-        backgroundColor: '#6b7280',
+        padding: '14px 28px',
+        background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
         color: 'white',
         border: 'none',
-        borderRadius: '5px',
+        borderRadius: '12px',
         cursor: 'pointer',
-        fontSize: '14px'
+        fontSize: '15px',
+        fontWeight: '700',
+        transition: 'all 0.3s'
     },
     mlToggleButton: {
         padding: '8px 16px',
@@ -1437,17 +1473,20 @@ const styles: { [key: string]: React.CSSProperties } = {
         transition: 'background-color 0.2s'
     },
     mlSuggestionsBox: {
-        backgroundColor: '#f0f9ff',
-        border: '2px solid #3b82f6',
-        borderRadius: '8px',
-        padding: '16px',
-        marginBottom: '20px'
+        background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+        border: '2px solid #38bdf8',
+        borderRadius: '16px',
+        padding: '24px',
+        marginBottom: '24px',
+        boxShadow: '0 4px 20px rgba(14, 165, 233, 0.15)'
     },
     mlSuggestionsTitle: {
-        fontSize: '16px',
-        fontWeight: 'bold',
-        color: '#1e40af',
-        marginBottom: '12px'
+        fontSize: '18px',
+        fontWeight: '800',
+        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        marginBottom: '16px'
     },
     mlLoadingText: {
         fontSize: '14px',
@@ -1469,44 +1508,50 @@ const styles: { [key: string]: React.CSSProperties } = {
     },
     mlSuggestionCard: {
         backgroundColor: 'white',
-        border: '1px solid #e5e7eb',
-        borderRadius: '6px',
-        padding: '12px'
+        border: '2px solid #bae6fd',
+        borderRadius: '12px',
+        padding: '16px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
     },
     mlSuggestionHeader: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: '8px'
+        marginBottom: '10px'
     },
     mlSuggestionLabel: {
-        fontSize: '12px',
-        fontWeight: 'bold',
-        color: '#6b7280',
+        fontSize: '13px',
+        fontWeight: '700',
+        color: '#64748b',
         textTransform: 'uppercase'
     },
     mlConfidence: {
-        fontSize: '11px',
-        color: '#10b981',
-        fontWeight: 'bold'
+        fontSize: '12px',
+        padding: '4px 10px',
+        background: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
+        color: '#065f46',
+        fontWeight: '700',
+        borderRadius: '8px'
     },
     mlSuggestionValue: {
-        fontSize: '16px',
-        fontWeight: 'bold',
-        color: '#1f2937',
-        marginBottom: '8px',
+        fontSize: '17px',
+        fontWeight: '800',
+        color: '#0f172a',
+        marginBottom: '12px',
         textTransform: 'capitalize'
     },
     mlApplyButton: {
         width: '100%',
-        padding: '6px 12px',
-        backgroundColor: '#3b82f6',
+        padding: '10px 16px',
+        background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
         color: 'white',
         border: 'none',
-        borderRadius: '4px',
+        borderRadius: '10px',
         cursor: 'pointer',
-        fontSize: '13px',
-        fontWeight: 'bold'
+        fontSize: '14px',
+        fontWeight: '700',
+        transition: 'all 0.3s',
+        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)'
     },
     mlSentimentDisplay: {
         display: 'flex',
